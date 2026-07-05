@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2f7d5d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Capture — Food &amp; Weight Tracker</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1c2430;
+    --muted: #6b7686;
+    --accent: #2f7d5d;
+    --accent-soft: #e3f1ea;
+    --danger: #c0504a;
+    --warn: #c78a2b;
+    --border: #e4e8ee;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14181f;
+      --card: #1d232d;
+      --text: #e8ecf2;
+      --muted: #94a0b0;
+      --accent: #4fae85;
+      --accent-soft: #21332b;
+      --border: #2b3341;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    padding: 16px; max-width: 640px; margin: 0 auto;
+  }
+  h1 { font-size: 1.25rem; letter-spacing: -0.02em; }
+  h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+  .date-nav { display: flex; align-items: center; gap: 6px; }
+  .date-nav button, .icon-btn {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; width: 32px; height: 32px; font-size: 1rem; cursor: pointer;
+  }
+  .date-nav button:hover, .icon-btn:hover { border-color: var(--accent); }
+  #dateLabel { font-weight: 600; font-size: 0.95rem; min-width: 108px; text-align: center; cursor: pointer; }
+  #dateInput { position: absolute; opacity: 0; pointer-events: none; }
+
+  /* progress */
+  .progress-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+  .big { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; }
+  .big small { font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+  .goal-edit { color: var(--muted); font-size: 0.85rem; cursor: pointer; text-decoration: underline dotted; }
+  .bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); border-radius: 5px; transition: width 0.3s; }
+  .bar.over > div { background: var(--warn); }
+  .remaining { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+
+  /* forms */
+  form.add { display: flex; gap: 8px; margin-bottom: 12px; }
+  input, select {
+    font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input[name=food] { flex: 1; min-width: 0; }
+  input[name=cal], input[name=weight] { width: 90px; }
+  button.primary {
+    font: inherit; font-weight: 600; background: var(--accent); color: #fff;
+    border: none; border-radius: 9px; padding: 9px 16px; cursor: pointer;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary:disabled { opacity: 0.6; cursor: default; }
+  button.ghost {
+    font: inherit; font-weight: 600; background: none; color: var(--text);
+    border: 1px solid var(--border); border-radius: 9px; padding: 9px 16px; cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--muted); }
+
+  .photo-btn {
+    display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-weight: 600; font-size: 0.95rem;
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px dashed var(--accent); border-radius: 10px;
+    padding: 12px; cursor: pointer; margin-bottom: 12px;
+  }
+  .photo-btn:hover { filter: brightness(0.97); }
+  .photo-btn:disabled { opacity: 0.6; cursor: default; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid var(--accent);
+    border-top-color: transparent; border-radius: 50%;
+    animation: spin 0.8s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* quick add chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .chips button {
+    font: inherit; font-size: 0.8rem; background: var(--accent-soft); color: var(--accent);
+    border: none; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-weight: 600;
+  }
+  .chips button:hover { filter: brightness(0.95); }
+
+  /* food list */
+  ul.foods { list-style: none; }
+  ul.foods li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 2px; border-top: 1px solid var(--border);
+  }
+  ul.foods li:first-child { border-top: none; }
+  .food-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .food-time { color: var(--muted); font-size: 0.75rem; }
+  .food-cal { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .del {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1rem; padding: 2px 6px; border-radius: 6px;
+  }
+  .del:hover { color: var(--danger); background: var(--border); }
+  .empty { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 14px 0; }
+
+  /* weight */
+  .weight-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .weight-today { font-size: 0.9rem; color: var(--muted); margin-left: auto; }
+  svg text { fill: var(--muted); font-size: 10px; font-family: inherit; }
+  .chart-note { color: var(--muted); font-size: 0.8rem; text-align: center; padding: 10px 0; }
+
+  footer { display: flex; gap: 10px; justify-content: center; padding: 6px 0 20px; flex-wrap: wrap; }
+  footer button {
+    font: inherit; font-size: 0.8rem; background: none; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  }
+  footer button:hover { color: var(--text); border-color: var(--muted); }
+
+  /* modals */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(10, 14, 18, 0.55);
+    display: none; align-items: flex-end; justify-content: center; z-index: 50; padding: 12px;
+  }
+  .overlay.open { display: flex; }
+  @media (min-width: 480px) { .overlay { align-items: center; } }
+  .modal {
+    background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+    width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; padding: 18px;
+  }
+  .modal h3 { font-size: 1.05rem; margin-bottom: 4px; }
+  .modal .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+  .review-photo { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; }
+  .review-item { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
+  .review-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
+  .review-item input.r-name { flex: 1; min-width: 0; }
+  .review-item input.r-cal { width: 78px; text-align: right; }
+  .review-note { color: var(--muted); font-size: 0.8rem; margin: 8px 0 4px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .settings-field { margin-bottom: 12px; }
+  .settings-field label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 5px; }
+  .settings-field input { width: 100%; }
+  .modal a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Capture</h1>
+  <div class="date-nav">
+    <button id="prevDay" aria-label="Previous day">‹</button>
+    <span id="dateLabel"></span>
+    <input type="date" id="dateInput">
+    <button id="nextDay" aria-label="Next day">›</button>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">⚙︎</button>
+  </div>
+</header>
+
+<section class="card">
+  <div class="progress-row">
+    <div class="big"><span id="calTotal">0</span> <small>/ <span id="calGoal"></span> cal</small></div>
+    <span class="goal-edit" id="editGoal">edit goal</span>
+  </div>
+  <div class="bar" id="calBar"><div></div></div>
+  <div class="remaining" id="calRemaining"></div>
+</section>
+
+<section class="card">
+  <h2>Food log</h2>
+  <button class="photo-btn" id="photoBtn">
+    <span id="photoBtnIcon">📷</span> <span id="photoBtnText">Snap a photo of your food</span>
+  </button>
+  <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+  <form class="add" id="foodForm">
+    <input name="food" placeholder="What did you eat?" autocomplete="off" required>
+    <input name="cal" type="number" min="0" step="1" placeholder="cal" required>
+    <button class="primary" type="submit">Add</button>
+  </form>
+  <div class="chips" id="quickAdd"></div>
+  <ul class="foods" id="foodList"></ul>
+</section>
+
+<section class="card">
+  <h2>Weight</h2>
+  <form class="weight-row" id="weightForm">
+    <input name="weight" type="number" min="0" step="0.1" placeholder="Weight">
+    <select id="unitSel">
+      <option value="lbs">lbs</option>
+      <option value="kg">kg</option>
+    </select>
+    <button class="primary" type="submit">Log</button>
+    <span class="weight-today" id="weightToday"></span>
+  </form>
+  <div id="weightChart"></div>
+</section>
+
+<section class="card">
+  <h2>Last 14 days — calories</h2>
+  <div id="calChart"></div>
+</section>
+
+<footer>
+  <button id="exportBtn">Export data</button>
+  <button id="importBtn">Import data</button>
+  <input type="file" id="importFile" accept=".json" hidden>
+</footer>
+
+<!-- Photo review modal -->
+<div class="overlay" id="reviewOverlay">
+  <div class="modal">
+    <h3>Review detected food</h3>
+    <p class="sub">Edit names and calories, untick anything wrong, then add to your log.</p>
+    <img class="review-photo" id="reviewPhoto" alt="Your food photo">
+    <div id="reviewItems"></div>
+    <p class="review-note" id="reviewNote"></p>
+    <div class="modal-actions">
+      <button class="ghost" id="reviewCancel">Cancel</button>
+      <button class="primary" id="reviewAdd">Add to log</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <h3>Settings</h3>
+    <p class="sub">Photo recognition uses the Claude API. Your key is stored only on this device and sent only to Anthropic.</p>
+    <div class="settings-field">
+      <label for="apiKeyInput">Anthropic API key (<a href="https://platform.claude.com/" target="_blank" rel="noopener">get one here</a>)</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="settingsCancel">Cancel</button>
+      <button class="primary" id="settingsSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE_KEY = "capture-tracker-v1";
+const KEY_KEY = "capture-api-key";
+
+let state = load();
+let viewDate = todayStr();
+let pendingReview = null; // items shown in the review modal
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && typeof s === "object" && s.days) return s;
+    }
+  } catch (e) { /* corrupted data — start fresh */ }
+  return { goal: 2000, unit: "lbs", days: {} };
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+function todayStr(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return localISO(d);
+}
+function localISO(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function shiftDate(dateStr, delta) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + delta);
+  return localISO(dt);
+}
+function day(dateStr) {
+  if (!state.days[dateStr]) state.days[dateStr] = { foods: [], weight: null };
+  return state.days[dateStr];
+}
+function fmtDate(dateStr) {
+  if (dateStr === todayStr()) return "Today";
+  if (dateStr === todayStr(-1)) return "Yesterday";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+function esc(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ---------- rendering ---------- */
+
+function render() {
+  document.getElementById("dateLabel").textContent = fmtDate(viewDate);
+  document.getElementById("dateInput").value = viewDate;
+  document.getElementById("unitSel").value = state.unit;
+  renderProgress();
+  renderFoods();
+  renderQuickAdd();
+  renderWeight();
+  renderCalChart();
+}
+
+function dayTotal(dateStr) {
+  const d = state.days[dateStr];
+  return d ? d.foods.reduce((s, f) => s + f.cal, 0) : 0;
+}
+
+function renderProgress() {
+  const total = dayTotal(viewDate);
+  const goal = state.goal;
+  document.getElementById("calTotal").textContent = total;
+  document.getElementById("calGoal").textContent = goal;
+  const bar = document.getElementById("calBar");
+  bar.classList.toggle("over", total > goal);
+  bar.firstElementChild.style.width = Math.min(100, (total / goal) * 100) + "%";
+  const rem = goal - total;
+  document.getElementById("calRemaining").textContent =
+    rem >= 0 ? rem + " cal remaining" : (-rem) + " cal over goal";
+}
+
+function renderFoods() {
+  const list = document.getElementById("foodList");
+  const foods = day(viewDate).foods;
+  if (!foods.length) {
+    list.innerHTML = '<li class="empty">Nothing logged yet.</li>';
+    return;
+  }
+  list.innerHTML = foods.map(f => `
+    <li>
+      <span class="food-name">${esc(f.name)} <span class="food-time">${f.time || ""}</span></span>
+      <span class="food-cal">${f.cal}</span>
+      <button class="del" data-id="${f.id}" aria-label="Delete ${esc(f.name)}">✕</button>
+    </li>`).join("");
+}
+
+function renderQuickAdd() {
+  const freq = {};
+  for (const d of Object.values(state.days)) {
+    for (const f of d.foods) {
+      const k = f.name.toLowerCase();
+      if (!freq[k]) freq[k] = { name: f.name, cal: f.cal, n: 0 };
+      freq[k].n++;
+      freq[k].cal = f.cal;
+    }
+  }
+  const top = Object.values(freq).sort((a, b) => b.n - a.n).slice(0, 6);
+  document.getElementById("quickAdd").innerHTML = top.length < 2 ? "" :
+    top.map((f, i) => `<button type="button" data-i="${i}">${esc(f.name)} · ${f.cal}</button>`).join("");
+  document.getElementById("quickAdd").dataset.items = JSON.stringify(top);
+}
+
+function renderWeight() {
+  const w = day(viewDate).weight;
+  document.getElementById("weightToday").textContent =
+    w != null ? `${fmtDate(viewDate)}: ${w} ${state.unit}` : "";
+  const wf = document.querySelector("#weightForm input[name=weight]");
+  wf.value = w != null ? w : "";
+
+  const pts = Object.entries(state.days)
+    .filter(([, d]) => d.weight != null)
+    .map(([date, d]) => ({ date, w: d.weight }))
+    .sort((a, b) => a.date < b.date ? -1 : 1)
+    .slice(-60);
+
+  const el = document.getElementById("weightChart");
+  if (pts.length < 2) {
+    el.innerHTML = '<div class="chart-note">Log weight on two or more days to see your trend.</div>';
+    return;
+  }
+  const W = 600, H = 140, padL = 38, padR = 10, padT = 10, padB = 20;
+  const min = Math.min(...pts.map(p => p.w)), max = Math.max(...pts.map(p => p.w));
+  const span = Math.max(max - min, 1);
+  const x = i => padL + (i / (pts.length - 1)) * (W - padL - padR);
+  const y = v => padT + (1 - (v - min) / span) * (H - padT - padB);
+  const path = pts.map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p.w).toFixed(1)).join(" ");
+  const dots = pts.map((p, i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(p.w).toFixed(1)}" r="2.5" fill="var(--accent)"><title>${p.date}: ${p.w} ${state.unit}</title></circle>`).join("");
+  const first = pts[0].date.slice(5), last = pts[pts.length - 1].date.slice(5);
+  const delta = (pts[pts.length - 1].w - pts[0].w).toFixed(1);
+  el.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Weight trend chart">
+      <text x="2" y="${y(max) + 4}">${max}</text>
+      <text x="2" y="${y(min) + 4}">${min}</text>
+      <text x="${padL}" y="${H - 4}">${first}</text>
+      <text x="${W - padR}" y="${H - 4}" text-anchor="end">${last}</text>
+      <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      ${dots}
+    </svg>
+    <div class="chart-note">${delta > 0 ? "+" : ""}${delta} ${state.unit} over ${pts.length} entries</div>`;
+}
+
+function renderCalChart() {
+  const days = [];
+  for (let i = 13; i >= 0; i--) days.push(todayStr(-i));
+  const totals = days.map(dayTotal);
+  const el = document.getElementById("calChart");
+  if (!totals.some(t => t > 0)) {
+    el.innerHTML = '<div class="chart-note">No food logged in the last 14 days yet.</div>';
+    return;
+  }
+  const W = 600, H = 130, padB = 18, padT = 12;
+  const max = Math.max(...totals, state.goal);
+  const bw = W / days.length;
+  const goalY = padT + (1 - state.goal / max) * (H - padT - padB);
+  const bars = days.map((d, i) => {
+    const h = totals[i] / max * (H - padT - padB);
+    const over = totals[i] > state.goal;
+    return `<rect x="${(i * bw + 4).toFixed(1)}" y="${(H - padB - h).toFixed(1)}" width="${(bw - 8).toFixed(1)}" height="${h.toFixed(1)}" rx="3"
+      fill="${over ? "var(--warn)" : "var(--accent)"}" opacity="${d === viewDate ? 1 : 0.65}">
+      <title>${d}: ${totals[i]} cal</title></rect>`;
+  }).join("");
+  const labels = days.map((d, i) =>
+    i % 2 === 1 ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle">${Number(d.slice(8))}</text>` : "").join("");
+  el.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Daily calories, last 14 days">
+      ${bars}
+      <line x1="0" x2="${W}" y1="${goalY.toFixed(1)}" y2="${goalY.toFixed(1)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/>
+      <text x="${W - 2}" y="${(goalY - 4).toFixed(1)}" text-anchor="end">goal ${state.goal}</text>
+      ${labels}
+    </svg>`;
+}
+
+/* ---------- photo → AI recognition ---------- */
+
+function getApiKey() { return localStorage.getItem(KEY_KEY) || ""; }
+
+function setAnalyzing(on) {
+  const btn = document.getElementById("photoBtn");
+  btn.disabled = on;
+  document.getElementById("photoBtnIcon").innerHTML = on ? '<span class="spinner"></span>' : "📷";
+  document.getElementById("photoBtnText").textContent = on ? "Analyzing your photo…" : "Snap a photo of your food";
+}
+
+// Downscale to keep uploads fast and token costs low; returns base64 JPEG.
+function downscaleImage(file, maxDim = 1024) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      resolve({ dataUrl, base64: dataUrl.split(",")[1] });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Couldn't read that image.")); };
+    img.src = url;
+  });
+}
+
+const FOOD_SCHEMA = {
+  type: "object",
+  properties: {
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Short food name, e.g. 'Grilled chicken breast'" },
+          portion: { type: "string", description: "Estimated visible portion, e.g. '1 cup' or '6 oz'" },
+          calories: { type: "integer", description: "Estimated calories for that portion" }
+        },
+        required: ["name", "portion", "calories"],
+        additionalProperties: false
+      }
+    },
+    note: { type: "string", description: "One short sentence on confidence or assumptions; empty string if none" }
+  },
+  required: ["items", "note"],
+  additionalProperties: false
+};
+
+async function identifyFood(base64) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": getApiKey(),
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: "claude-opus-4-8",
+      max_tokens: 1500,
+      system: "You are a nutrition estimation assistant. Identify each distinct food or drink visible in the photo and estimate calories for the visible portion using typical nutritional values. Prefer common household portion sizes. If the photo contains no food, return an empty items array and explain in the note.",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
+          { type: "text", text: "Identify the foods in this photo and estimate calories per item." }
+        ]
+      }],
+      output_config: { format: { type: "json_schema", schema: FOOD_SCHEMA } }
+    })
+  });
+
+  if (!res.ok) {
+    let msg = "Request failed (" + res.status + ")";
+    try { msg = (await res.json()).error.message || msg; } catch (e) { /* keep generic */ }
+    if (res.status === 401) msg = "API key was rejected — check it in Settings (⚙︎).";
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  if (data.stop_reason === "refusal") throw new Error("The model declined to analyze this image. Try a different photo.");
+  const text = (data.content || []).find(b => b.type === "text");
+  if (!text) throw new Error("No result returned — try again.");
+  return JSON.parse(text.text);
+}
+
+document.getElementById("photoBtn").onclick = () => {
+  if (!getApiKey()) { openSettings("Add your Anthropic API key to enable photo recognition."); return; }
+  document.getElementById("photoInput").click();
+};
+
+document.getElementById("photoInput").onchange = async e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  setAnalyzing(true);
+  try {
+    const { dataUrl, base64 } = await downscaleImage(file);
+    const result = await identifyFood(base64);
+    if (!result.items || !result.items.length) {
+      alert(result.note || "No food detected in that photo.");
+      return;
+    }
+    openReview(dataUrl, result);
+  } catch (err) {
+    alert("Photo recognition failed: " + err.message);
+  } finally {
+    setAnalyzing(false);
+  }
+};
+
+/* ---------- review modal ---------- */
+
+function openReview(dataUrl, result) {
+  pendingReview = result;
+  document.getElementById("reviewPhoto").src = dataUrl;
+  document.getElementById("reviewNote").textContent = result.note || "";
+  document.getElementById("reviewItems").innerHTML = result.items.map((it, i) => `
+    <div class="review-item">
+      <input type="checkbox" checked data-i="${i}" aria-label="Include ${esc(it.name)}">
+      <input class="r-name" value="${esc(it.name)}${it.portion ? esc(" (" + it.portion + ")") : ""}" aria-label="Food name">
+      <input class="r-cal" type="number" min="0" step="1" value="${it.calories}" aria-label="Calories">
+    </div>`).join("");
+  document.getElementById("reviewOverlay").classList.add("open");
+}
+
+function closeReview() {
+  document.getElementById("reviewOverlay").classList.remove("open");
+  document.getElementById("reviewPhoto").src = "";
+  pendingReview = null;
+}
+
+document.getElementById("reviewCancel").onclick = closeReview;
+document.getElementById("reviewAdd").onclick = () => {
+  const rows = document.querySelectorAll("#reviewItems .review-item");
+  let added = 0;
+  for (const row of rows) {
+    if (!row.querySelector("input[type=checkbox]").checked) continue;
+    const name = row.querySelector(".r-name").value.trim();
+    const cal = parseInt(row.querySelector(".r-cal").value, 10);
+    if (name && cal >= 0) { addFood(name, cal); added++; }
+  }
+  closeReview();
+  if (!added) alert("Nothing was selected to add.");
+};
+
+/* ---------- settings modal ---------- */
+
+function openSettings(hint) {
+  document.getElementById("apiKeyInput").value = getApiKey();
+  const sub = document.querySelector("#settingsOverlay .sub");
+  sub.textContent = hint || "Photo recognition uses the Claude API. Your key is stored only on this device and sent only to Anthropic.";
+  document.getElementById("settingsOverlay").classList.add("open");
+}
+document.getElementById("settingsBtn").onclick = () => openSettings();
+document.getElementById("settingsCancel").onclick = () =>
+  document.getElementById("settingsOverlay").classList.remove("open");
+document.getElementById("settingsSave").onclick = () => {
+  const v = document.getElementById("apiKeyInput").value.trim();
+  if (v) localStorage.setItem(KEY_KEY, v); else localStorage.removeItem(KEY_KEY);
+  document.getElementById("settingsOverlay").classList.remove("open");
+};
+
+/* ---------- core events ---------- */
+
+document.getElementById("prevDay").onclick = () => { viewDate = shiftDate(viewDate, -1); render(); };
+document.getElementById("nextDay").onclick = () => { viewDate = shiftDate(viewDate, 1); render(); };
+document.getElementById("dateLabel").onclick = () => {
+  const inp = document.getElementById("dateInput");
+  inp.showPicker ? inp.showPicker() : inp.click();
+};
+document.getElementById("dateInput").onchange = e => { if (e.target.value) { viewDate = e.target.value; render(); } };
+
+document.getElementById("editGoal").onclick = () => {
+  const v = prompt("Daily calorie goal:", state.goal);
+  const n = parseInt(v, 10);
+  if (n > 0) { state.goal = n; save(); render(); }
+};
+
+document.getElementById("foodForm").onsubmit = e => {
+  e.preventDefault();
+  const name = e.target.food.value.trim();
+  const cal = parseInt(e.target.cal.value, 10);
+  if (!name || !(cal >= 0)) return;
+  addFood(name, cal);
+  e.target.reset();
+  e.target.food.focus();
+};
+
+function addFood(name, cal) {
+  const now = new Date();
+  day(viewDate).foods.push({
+    id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+    name, cal,
+    time: viewDate === todayStr()
+      ? now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+      : ""
+  });
+  save(); render();
+}
+
+document.getElementById("foodList").onclick = e => {
+  const btn = e.target.closest(".del");
+  if (!btn) return;
+  const d = day(viewDate);
+  d.foods = d.foods.filter(f => f.id !== btn.dataset.id);
+  save(); render();
+};
+
+document.getElementById("quickAdd").onclick = e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const items = JSON.parse(e.currentTarget.dataset.items || "[]");
+  const it = items[Number(btn.dataset.i)];
+  if (it) addFood(it.name, it.cal);
+};
+
+document.getElementById("weightForm").onsubmit = e => {
+  e.preventDefault();
+  const v = parseFloat(e.target.weight.value);
+  day(viewDate).weight = isFinite(v) && v > 0 ? v : null;
+  save(); render();
+};
+
+document.getElementById("unitSel").onchange = e => { state.unit = e.target.value; save(); render(); };
+
+document.getElementById("exportBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "capture-tracker-" + todayStr() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+document.getElementById("importBtn").onclick = () => document.getElementById("importFile").click();
+document.getElementById("importFile").onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const s = JSON.parse(reader.result);
+      if (!s || typeof s !== "object" || !s.days) throw new Error("bad format");
+      if (!confirm("Replace all current data with the imported file?")) return;
+      state = { goal: s.goal || 2000, unit: s.unit || "lbs", days: s.days };
+      save(); render();
+    } catch (err) {
+      alert("Couldn't import that file — it doesn't look like a Capture export.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+};
+
+/* ---------- PWA ---------- */
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("sw.js").catch(() => { /* offline support unavailable */ });
+}
+
+render();
+</script>
+</body>
+</html>
