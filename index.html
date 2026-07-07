@@ -22,6 +22,9 @@
     --warn: #c78a2b;
     --border: #e4e8ee;
     --radius: 14px;
+    --c-green: #3f9d63;
+    --c-yellow: #e0a63a;
+    --c-orange: #e07840;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -32,6 +35,9 @@
       --accent: #4fae85;
       --accent-soft: #21332b;
       --border: #2b3341;
+      --c-green: #4fb374;
+      --c-yellow: #e5b356;
+      --c-orange: #e58a58;
     }
   }
   * { box-sizing: border-box; margin: 0; }
@@ -56,25 +62,39 @@
   #dateLabel { font-weight: 600; font-size: 0.95rem; min-width: 108px; text-align: center; cursor: pointer; }
   #dateInput { position: absolute; opacity: 0; pointer-events: none; }
 
-  /* progress */
+  /* budget */
   .progress-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
   .big { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; }
   .big small { font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+  .budget-side { display: flex; align-items: baseline; gap: 12px; }
+  .streak { font-size: 0.9rem; font-weight: 600; color: var(--warn); }
   .goal-edit { color: var(--muted); font-size: 0.85rem; cursor: pointer; text-decoration: underline dotted; }
   .bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
   .bar > div { height: 100%; background: var(--accent); border-radius: 5px; transition: width 0.3s; }
   .bar.over > div { background: var(--warn); }
   .remaining { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
 
+  /* color balance */
+  .color-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 14px; background: var(--border); }
+  .color-bar > div { transition: width 0.3s; }
+  .color-bar .g { background: var(--c-green); }
+  .color-bar .y { background: var(--c-yellow); }
+  .color-bar .o { background: var(--c-orange); }
+  .color-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); margin-top: 7px; }
+  .color-legend b { color: var(--text); font-weight: 600; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+  .dot.green { background: var(--c-green); }
+  .dot.yellow { background: var(--c-yellow); }
+  .dot.orange { background: var(--c-orange); }
+  .color-hint { font-size: 0.72rem; color: var(--muted); margin-top: 5px; }
+
   /* forms */
-  form.add { display: flex; gap: 8px; margin-bottom: 12px; }
   input, select {
     font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px;
   }
   input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  input[name=food] { flex: 1; min-width: 0; }
-  input[name=cal], input[name=weight] { width: 90px; }
+  input[name=weight] { width: 90px; }
   button.primary {
     font: inherit; font-weight: 600; background: var(--accent); color: #fff;
     border: none; border-radius: 9px; padding: 9px 16px; cursor: pointer;
@@ -111,22 +131,39 @@
   }
   .chips button:hover { filter: brightness(0.95); }
 
-  /* food list */
-  ul.foods { list-style: none; }
-  ul.foods li {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 2px; border-top: 1px solid var(--border);
+  /* meals */
+  .meal { border-top: 1px solid var(--border); padding: 10px 0 4px; }
+  .meal:first-of-type { border-top: none; padding-top: 2px; }
+  .meal-head { display: flex; align-items: center; gap: 8px; }
+  .meal-head h3 { font-size: 0.95rem; font-weight: 600; flex: 1; }
+  .meal-cal { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .meal-plus {
+    background: none; border: 1px solid var(--border); color: var(--accent);
+    border-radius: 8px; width: 28px; height: 28px; font-size: 1.05rem; line-height: 1; cursor: pointer;
   }
-  ul.foods li:first-child { border-top: none; }
-  .food-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .food-time { color: var(--muted); font-size: 0.75rem; }
-  .food-cal { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .meal-plus:hover { border-color: var(--accent); }
+  ul.foods { list-style: none; }
+  ul.foods li { display: flex; align-items: center; gap: 8px; padding: 7px 0 7px 4px; }
+  .food-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; }
+  .food-time { color: var(--muted); font-size: 0.72rem; }
+  .food-cal { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.92rem; }
   .del {
     background: none; border: none; color: var(--muted); cursor: pointer;
     font-size: 1rem; padding: 2px 6px; border-radius: 6px;
   }
   .del:hover { color: var(--danger); background: var(--border); }
-  .empty { color: var(--muted); font-size: 0.9rem; text-align: center; padding: 14px 0; }
+  .empty { color: var(--muted); font-size: 0.85rem; padding: 6px 4px; }
+
+  form.meal-add { display: none; gap: 6px; padding: 6px 0; }
+  form.meal-add.open { display: flex; }
+  form.meal-add input[name=food] { flex: 1; min-width: 0; padding: 8px 10px; }
+  form.meal-add input[name=cal] { width: 72px; padding: 8px 8px; }
+  form.meal-add button.primary { padding: 8px 12px; }
+  .color-cycle {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+    width: 38px; cursor: pointer; font-size: 1rem; line-height: 1;
+  }
+  .color-cycle .dot { width: 12px; height: 12px; margin: 0; }
 
   /* weight */
   .weight-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
@@ -153,17 +190,23 @@
     width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; padding: 18px;
   }
   .modal h3 { font-size: 1.05rem; margin-bottom: 4px; }
+  .modal h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 8px; }
   .modal .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
   .review-photo { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; }
-  .review-item { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
+  .review-meal { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.9rem; }
+  .review-item { display: flex; gap: 7px; align-items: center; padding: 6px 0; }
   .review-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
-  .review-item input.r-name { flex: 1; min-width: 0; }
-  .review-item input.r-cal { width: 78px; text-align: right; }
+  .review-item input.r-name { flex: 1; min-width: 0; padding: 8px 10px; }
+  .review-item input.r-cal { width: 72px; text-align: right; padding: 8px 8px; }
   .review-note { color: var(--muted); font-size: 0.8rem; margin: 8px 0 4px; }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
-  .settings-field { margin-bottom: 12px; }
+  .settings-field { margin-bottom: 10px; }
   .settings-field label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 5px; }
-  .settings-field input { width: 100%; }
+  .settings-field input, .settings-field select { width: 100%; }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .radio-row { display: flex; gap: 14px; font-size: 0.9rem; margin-bottom: 10px; }
+  .radio-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .budget-preview { font-size: 0.9rem; background: var(--accent-soft); color: var(--accent); border-radius: 9px; padding: 9px 12px; margin-top: 6px; font-weight: 600; }
   .modal a { color: var(--accent); }
 </style>
 </head>
@@ -182,26 +225,25 @@
 
 <section class="card">
   <div class="progress-row">
-    <div class="big"><span id="calTotal">0</span> <small>/ <span id="calGoal"></span> cal</small></div>
-    <span class="goal-edit" id="editGoal">edit goal</span>
+    <div class="big"><span id="calRemainBig">0</span> <small>cal left</small></div>
+    <div class="budget-side">
+      <span class="streak" id="streakBadge" hidden>🔥 <span id="streakN"></span></span>
+      <span class="goal-edit" id="editGoal">budget</span>
+    </div>
   </div>
   <div class="bar" id="calBar"><div></div></div>
-  <div class="remaining" id="calRemaining"></div>
+  <div class="remaining"><span id="calTotal">0</span> eaten · <span id="calGoal">2000</span> budget</div>
+  <div id="colorBalance"></div>
 </section>
 
 <section class="card">
-  <h2>Food log</h2>
+  <h2>Meals</h2>
   <button class="photo-btn" id="photoBtn">
     <span id="photoBtnIcon">📷</span> <span id="photoBtnText">Snap a photo of your food</span>
   </button>
   <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
-  <form class="add" id="foodForm">
-    <input name="food" placeholder="What did you eat?" autocomplete="off" required>
-    <input name="cal" type="number" min="0" step="1" placeholder="cal" required>
-    <button class="primary" type="submit">Add</button>
-  </form>
   <div class="chips" id="quickAdd"></div>
-  <ul class="foods" id="foodList"></ul>
+  <div id="mealSections"></div>
 </section>
 
 <section class="card">
@@ -233,8 +275,17 @@
 <div class="overlay" id="reviewOverlay">
   <div class="modal">
     <h3>Review detected food</h3>
-    <p class="sub">Edit names and calories, untick anything wrong, then add to your log.</p>
+    <p class="sub">Edit anything, tap a dot to change its color, untick what's wrong.</p>
     <img class="review-photo" id="reviewPhoto" alt="Your food photo">
+    <div class="review-meal">
+      <label for="reviewMeal">Log to:</label>
+      <select id="reviewMeal">
+        <option value="breakfast">Breakfast</option>
+        <option value="lunch">Lunch</option>
+        <option value="dinner">Dinner</option>
+        <option value="snacks">Snacks</option>
+      </select>
+    </div>
     <div id="reviewItems"></div>
     <p class="review-note" id="reviewNote"></p>
     <div class="modal-actions">
@@ -248,11 +299,72 @@
 <div class="overlay" id="settingsOverlay">
   <div class="modal">
     <h3>Settings</h3>
-    <p class="sub">Photo recognition uses the Claude API. Your key is stored only on this device and sent only to Anthropic.</p>
+    <p class="sub" id="settingsSub">Your data and API key stay on this device.</p>
+
+    <h4>Calorie budget</h4>
+    <div class="radio-row">
+      <label><input type="radio" name="budgetMode" value="profile"> Calculate for me</label>
+      <label><input type="radio" name="budgetMode" value="manual"> Set manually</label>
+    </div>
+    <div id="manualBudgetFields">
+      <div class="settings-field">
+        <label for="manualBudget">Daily calorie budget</label>
+        <input type="number" id="manualBudget" min="800" step="10">
+      </div>
+    </div>
+    <div id="profileFields">
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label for="pSex">Sex</label>
+          <select id="pSex"><option value="">—</option><option value="m">Male</option><option value="f">Female</option></select>
+        </div>
+        <div class="settings-field">
+          <label for="pAge">Age</label>
+          <input type="number" id="pAge" min="10" max="120">
+        </div>
+      </div>
+      <div class="settings-grid" id="heightImperial">
+        <div class="settings-field">
+          <label for="pFt">Height (ft)</label>
+          <input type="number" id="pFt" min="3" max="8">
+        </div>
+        <div class="settings-field">
+          <label for="pIn">Height (in)</label>
+          <input type="number" id="pIn" min="0" max="11">
+        </div>
+      </div>
+      <div class="settings-field" id="heightMetric" style="display:none">
+        <label for="pCm">Height (cm)</label>
+        <input type="number" id="pCm" min="100" max="250">
+      </div>
+      <div class="settings-field">
+        <label for="pActivity">Activity level</label>
+        <select id="pActivity">
+          <option value="1.2">Sedentary (desk job, little exercise)</option>
+          <option value="1.375">Lightly active (1–3 workouts/week)</option>
+          <option value="1.55">Moderately active (3–5 workouts/week)</option>
+          <option value="1.725">Very active (6–7 workouts/week)</option>
+        </select>
+      </div>
+      <div class="settings-grid">
+        <div class="settings-field">
+          <label for="pGoalWeight">Goal weight (<span class="unit-label">lbs</span>)</label>
+          <input type="number" id="pGoalWeight" min="0" step="0.1">
+        </div>
+        <div class="settings-field">
+          <label for="pPace">Lose per week</label>
+          <select id="pPace"></select>
+        </div>
+      </div>
+      <div class="budget-preview" id="budgetPreview"></div>
+    </div>
+
+    <h4>Photo recognition</h4>
     <div class="settings-field">
       <label for="apiKeyInput">Anthropic API key (<a href="https://platform.claude.com/" target="_blank" rel="noopener">get one here</a>)</label>
       <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
     </div>
+
     <div class="modal-actions">
       <button class="ghost" id="settingsCancel">Cancel</button>
       <button class="primary" id="settingsSave">Save</button>
@@ -263,21 +375,41 @@
 <script>
 const STORE_KEY = "capture-tracker-v1";
 const KEY_KEY = "capture-api-key";
+const MEALS = [["breakfast", "Breakfast"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["snacks", "Snacks"]];
+const COLORS = ["green", "yellow", "orange"];
+const COLOR_TARGETS = { green: 30, yellow: 45, orange: 25 }; // % of daily calories
 
 let state = load();
 let viewDate = todayStr();
-let pendingReview = null; // items shown in the review modal
+let pendingReview = null;
 
 function load() {
+  let s = null;
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
-      const s = JSON.parse(raw);
-      if (s && typeof s === "object" && s.days) return s;
+      const p = JSON.parse(raw);
+      if (p && typeof p === "object" && p.days) s = p;
     }
   } catch (e) { /* corrupted data — start fresh */ }
-  return { goal: 2000, unit: "lbs", days: {} };
+  if (!s) s = { goal: 2000, unit: "lbs", days: {} };
+  normalize(s);
+  return s;
 }
+
+// migrate pre-Noom-style data and fill defaults
+function normalize(s) {
+  if (!s.profile) s.profile = { sex: "", age: null, heightCm: null, activity: 1.375, goalWeight: null, pace: 1 };
+  if (s.useProfile === undefined) s.useProfile = false;
+  if (!s.goal || s.goal < 800) s.goal = 2000;
+  for (const d of Object.values(s.days)) {
+    for (const f of d.foods) {
+      if (!f.meal) f.meal = guessMealFromTime(f.time) || "snacks";
+      if (!COLORS.includes(f.color)) f.color = "yellow";
+    }
+  }
+}
+
 function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 
 function todayStr(offset = 0) {
@@ -304,7 +436,57 @@ function fmtDate(dateStr) {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
 function esc(s) {
-  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function hourFrom(timeStr) {
+  const m = /(\d+):(\d+)\s*(AM|PM)?/i.exec(timeStr || "");
+  if (!m) return null;
+  let h = Number(m[1]) % 12;
+  if (m[3] && m[3].toUpperCase() === "PM") h += 12;
+  if (!m[3]) h = Number(m[1]); // 24h locale
+  return h + Number(m[2]) / 60;
+}
+function mealForHour(h) {
+  if (h == null) return null;
+  if (h < 10.5) return "breakfast";
+  if (h < 14.5) return "lunch";
+  if (h < 16.5) return "snacks";
+  if (h < 21) return "dinner";
+  return "snacks";
+}
+function guessMealFromTime(timeStr) { return mealForHour(hourFrom(timeStr)); }
+function mealOfNow() {
+  const n = new Date();
+  return mealForHour(n.getHours() + n.getMinutes() / 60) || "snacks";
+}
+
+/* ---------- calorie budget (Mifflin-St Jeor) ---------- */
+
+function latestWeight() {
+  const entries = Object.entries(state.days)
+    .filter(([, d]) => d.weight != null)
+    .sort((a, b) => a[0] < b[0] ? 1 : -1);
+  return entries.length ? entries[0][1].weight : null;
+}
+
+function computedBudget() {
+  const p = state.profile;
+  const w = latestWeight();
+  if (!p.sex || !p.age || !p.heightCm || w == null) return null;
+  const kg = state.unit === "lbs" ? w * 0.45359237 : w;
+  const bmr = 10 * kg + 6.25 * p.heightCm - 5 * p.age + (p.sex === "m" ? 5 : -161);
+  const tdee = bmr * (p.activity || 1.375);
+  const dailyDeficit = state.unit === "lbs" ? p.pace * 3500 / 7 : p.pace * 7700 / 7;
+  return Math.max(1200, Math.round((tdee - dailyDeficit) / 10) * 10);
+}
+
+function budget() {
+  if (state.useProfile) {
+    const b = computedBudget();
+    if (b) return b;
+  }
+  return state.goal;
 }
 
 /* ---------- rendering ---------- */
@@ -314,7 +496,7 @@ function render() {
   document.getElementById("dateInput").value = viewDate;
   document.getElementById("unitSel").value = state.unit;
   renderProgress();
-  renderFoods();
+  renderMeals();
   renderQuickAdd();
   renderWeight();
   renderCalChart();
@@ -324,33 +506,83 @@ function dayTotal(dateStr) {
   const d = state.days[dateStr];
   return d ? d.foods.reduce((s, f) => s + f.cal, 0) : 0;
 }
+function hasFood(dateStr) {
+  const d = state.days[dateStr];
+  return !!(d && d.foods.length);
+}
+function streak() {
+  let n = 0;
+  let d = hasFood(todayStr()) ? todayStr() : todayStr(-1);
+  while (hasFood(d)) { n++; d = shiftDate(d, -1); }
+  return n;
+}
 
 function renderProgress() {
   const total = dayTotal(viewDate);
-  const goal = state.goal;
+  const goal = budget();
+  const rem = goal - total;
+  document.getElementById("calRemainBig").textContent = rem >= 0 ? rem : "+" + (-rem);
+  document.querySelector("#calRemainBig + small").textContent = rem >= 0 ? "cal left" : "cal over";
   document.getElementById("calTotal").textContent = total;
   document.getElementById("calGoal").textContent = goal;
   const bar = document.getElementById("calBar");
   bar.classList.toggle("over", total > goal);
   bar.firstElementChild.style.width = Math.min(100, (total / goal) * 100) + "%";
-  const rem = goal - total;
-  document.getElementById("calRemaining").textContent =
-    rem >= 0 ? rem + " cal remaining" : (-rem) + " cal over goal";
+
+  const n = streak();
+  const badge = document.getElementById("streakBadge");
+  badge.hidden = n < 2;
+  document.getElementById("streakN").textContent = n + " day streak";
+
+  // color balance
+  const sums = { green: 0, yellow: 0, orange: 0 };
+  for (const f of day(viewDate).foods) sums[f.color] += f.cal;
+  const el = document.getElementById("colorBalance");
+  if (!total) { el.innerHTML = ""; return; }
+  const pct = c => Math.round(sums[c] / total * 100);
+  el.innerHTML = `
+    <div class="color-bar">
+      <div class="g" style="width:${pct("green")}%"></div>
+      <div class="y" style="width:${pct("yellow")}%"></div>
+      <div class="o" style="width:${pct("orange")}%"></div>
+    </div>
+    <div class="color-legend">
+      <span><span class="dot green"></span>Green <b>${pct("green")}%</b></span>
+      <span><span class="dot yellow"></span>Yellow <b>${pct("yellow")}%</b></span>
+      <span><span class="dot orange"></span>Orange <b>${pct("orange")}%</b></span>
+    </div>
+    <div class="color-hint">Colors reflect caloric density — aim for roughly ${COLOR_TARGETS.green}% green · ${COLOR_TARGETS.yellow}% yellow · ${COLOR_TARGETS.orange}% orange.</div>`;
 }
 
-function renderFoods() {
-  const list = document.getElementById("foodList");
+function renderMeals() {
   const foods = day(viewDate).foods;
-  if (!foods.length) {
-    list.innerHTML = '<li class="empty">Nothing logged yet.</li>';
-    return;
-  }
-  list.innerHTML = foods.map(f => `
-    <li>
-      <span class="food-name">${esc(f.name)} <span class="food-time">${f.time || ""}</span></span>
-      <span class="food-cal">${f.cal}</span>
-      <button class="del" data-id="${f.id}" aria-label="Delete ${esc(f.name)}">✕</button>
-    </li>`).join("");
+  const el = document.getElementById("mealSections");
+  el.innerHTML = MEALS.map(([key, label]) => {
+    const items = foods.filter(f => f.meal === key);
+    const sub = items.reduce((s, f) => s + f.cal, 0);
+    const rows = items.map(f => `
+      <li>
+        <span class="dot ${f.color}" data-id="${f.id}" role="button" title="Tap to change color"></span>
+        <span class="food-name">${esc(f.name)} <span class="food-time">${f.time || ""}</span></span>
+        <span class="food-cal">${f.cal}</span>
+        <button class="del" data-id="${f.id}" aria-label="Delete ${esc(f.name)}">✕</button>
+      </li>`).join("");
+    return `
+      <div class="meal" data-meal="${key}">
+        <div class="meal-head">
+          <h3>${label}</h3>
+          <span class="meal-cal">${sub ? sub + " cal" : ""}</span>
+          <button class="meal-plus" data-meal="${key}" aria-label="Add to ${label}">+</button>
+        </div>
+        <ul class="foods">${rows || ""}</ul>
+        <form class="meal-add" data-meal="${key}">
+          <button type="button" class="color-cycle" data-color="yellow" title="Food color (tap to change)"><span class="dot yellow"></span></button>
+          <input name="food" placeholder="Food name" autocomplete="off" required>
+          <input name="cal" type="number" min="0" step="1" placeholder="cal" required>
+          <button class="primary" type="submit">Add</button>
+        </form>
+      </div>`;
+  }).join("");
 }
 
 function renderQuickAdd() {
@@ -358,14 +590,15 @@ function renderQuickAdd() {
   for (const d of Object.values(state.days)) {
     for (const f of d.foods) {
       const k = f.name.toLowerCase();
-      if (!freq[k]) freq[k] = { name: f.name, cal: f.cal, n: 0 };
+      if (!freq[k]) freq[k] = { name: f.name, cal: f.cal, color: f.color, n: 0 };
       freq[k].n++;
       freq[k].cal = f.cal;
+      freq[k].color = f.color;
     }
   }
   const top = Object.values(freq).sort((a, b) => b.n - a.n).slice(0, 6);
   document.getElementById("quickAdd").innerHTML = top.length < 2 ? "" :
-    top.map((f, i) => `<button type="button" data-i="${i}">${esc(f.name)} · ${f.cal}</button>`).join("");
+    top.map((f, i) => `<button type="button" data-i="${i}"><span class="dot ${f.color}"></span>${esc(f.name)} · ${f.cal}</button>`).join("");
   document.getElementById("quickAdd").dataset.items = JSON.stringify(top);
 }
 
@@ -387,26 +620,34 @@ function renderWeight() {
     el.innerHTML = '<div class="chart-note">Log weight on two or more days to see your trend.</div>';
     return;
   }
+  const goalW = state.profile.goalWeight;
   const W = 600, H = 140, padL = 38, padR = 10, padT = 10, padB = 20;
-  const min = Math.min(...pts.map(p => p.w)), max = Math.max(...pts.map(p => p.w));
+  let min = Math.min(...pts.map(p => p.w)), max = Math.max(...pts.map(p => p.w));
+  if (goalW) { min = Math.min(min, goalW); max = Math.max(max, goalW); }
   const span = Math.max(max - min, 1);
   const x = i => padL + (i / (pts.length - 1)) * (W - padL - padR);
   const y = v => padT + (1 - (v - min) / span) * (H - padT - padB);
   const path = pts.map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p.w).toFixed(1)).join(" ");
   const dots = pts.map((p, i) =>
     `<circle cx="${x(i).toFixed(1)}" cy="${y(p.w).toFixed(1)}" r="2.5" fill="var(--accent)"><title>${p.date}: ${p.w} ${state.unit}</title></circle>`).join("");
+  const goalLine = goalW ? `
+    <line x1="${padL}" x2="${W - padR}" y1="${y(goalW).toFixed(1)}" y2="${y(goalW).toFixed(1)}" stroke="var(--c-green)" stroke-dasharray="5 4" stroke-width="1.5"/>
+    <text x="${W - padR}" y="${(y(goalW) - 4).toFixed(1)}" text-anchor="end">goal ${goalW}</text>` : "";
   const first = pts[0].date.slice(5), last = pts[pts.length - 1].date.slice(5);
-  const delta = (pts[pts.length - 1].w - pts[0].w).toFixed(1);
+  const latest = pts[pts.length - 1].w;
+  const toGo = goalW ? Math.abs(latest - goalW).toFixed(1) : null;
+  const delta = (latest - pts[0].w).toFixed(1);
   el.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Weight trend chart">
       <text x="2" y="${y(max) + 4}">${max}</text>
       <text x="2" y="${y(min) + 4}">${min}</text>
       <text x="${padL}" y="${H - 4}">${first}</text>
       <text x="${W - padR}" y="${H - 4}" text-anchor="end">${last}</text>
+      ${goalLine}
       <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2"/>
       ${dots}
     </svg>
-    <div class="chart-note">${delta > 0 ? "+" : ""}${delta} ${state.unit} over ${pts.length} entries</div>`;
+    <div class="chart-note">${delta > 0 ? "+" : ""}${delta} ${state.unit} over ${pts.length} entries${toGo ? ` · ${toGo} ${state.unit} to goal` : ""}</div>`;
 }
 
 function renderCalChart() {
@@ -418,13 +659,14 @@ function renderCalChart() {
     el.innerHTML = '<div class="chart-note">No food logged in the last 14 days yet.</div>';
     return;
   }
+  const goal = budget();
   const W = 600, H = 130, padB = 18, padT = 12;
-  const max = Math.max(...totals, state.goal);
+  const max = Math.max(...totals, goal);
   const bw = W / days.length;
-  const goalY = padT + (1 - state.goal / max) * (H - padT - padB);
+  const goalY = padT + (1 - goal / max) * (H - padT - padB);
   const bars = days.map((d, i) => {
     const h = totals[i] / max * (H - padT - padB);
-    const over = totals[i] > state.goal;
+    const over = totals[i] > goal;
     return `<rect x="${(i * bw + 4).toFixed(1)}" y="${(H - padB - h).toFixed(1)}" width="${(bw - 8).toFixed(1)}" height="${h.toFixed(1)}" rx="3"
       fill="${over ? "var(--warn)" : "var(--accent)"}" opacity="${d === viewDate ? 1 : 0.65}">
       <title>${d}: ${totals[i]} cal</title></rect>`;
@@ -435,7 +677,7 @@ function renderCalChart() {
     <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Daily calories, last 14 days">
       ${bars}
       <line x1="0" x2="${W}" y1="${goalY.toFixed(1)}" y2="${goalY.toFixed(1)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/>
-      <text x="${W - 2}" y="${(goalY - 4).toFixed(1)}" text-anchor="end">goal ${state.goal}</text>
+      <text x="${W - 2}" y="${(goalY - 4).toFixed(1)}" text-anchor="end">budget ${goal}</text>
       ${labels}
     </svg>`;
 }
@@ -451,7 +693,6 @@ function setAnalyzing(on) {
   document.getElementById("photoBtnText").textContent = on ? "Analyzing your photo…" : "Snap a photo of your food";
 }
 
-// Downscale to keep uploads fast and token costs low; returns base64 JPEG.
 function downscaleImage(file, maxDim = 1024) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -481,9 +722,13 @@ const FOOD_SCHEMA = {
         properties: {
           name: { type: "string", description: "Short food name, e.g. 'Grilled chicken breast'" },
           portion: { type: "string", description: "Estimated visible portion, e.g. '1 cup' or '6 oz'" },
-          calories: { type: "integer", description: "Estimated calories for that portion" }
+          calories: { type: "integer", description: "Estimated calories for that portion" },
+          color: {
+            type: "string", enum: ["green", "yellow", "orange"],
+            description: "Caloric-density category. green = low caloric density: most vegetables, fruits, leafy greens, whole grains, broth soups, nonfat dairy. yellow = medium: lean meats, poultry, fish, eggs, starches like rice/pasta/potato, legumes, low-fat dairy, avocado. orange = high: oils, butter, cheese, nuts, nut butters, fried foods, sweets, desserts, processed snacks, fatty/red meats, sugary drinks."
+          }
         },
-        required: ["name", "portion", "calories"],
+        required: ["name", "portion", "calories", "color"],
         additionalProperties: false
       }
     },
@@ -505,12 +750,12 @@ async function identifyFood(base64) {
     body: JSON.stringify({
       model: "claude-opus-4-8",
       max_tokens: 1500,
-      system: "You are a nutrition estimation assistant. Identify each distinct food or drink visible in the photo and estimate calories for the visible portion using typical nutritional values. Prefer common household portion sizes. If the photo contains no food, return an empty items array and explain in the note.",
+      system: "You are a nutrition estimation assistant. Identify each distinct food or drink visible in the photo, estimate calories for the visible portion using typical nutritional values, and classify each item by caloric density into green (low), yellow (medium), or orange (high) per the schema descriptions. Prefer common household portion sizes. If the photo contains no food, return an empty items array and explain in the note.",
       messages: [{
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
-          { type: "text", text: "Identify the foods in this photo and estimate calories per item." }
+          { type: "text", text: "Identify the foods in this photo; estimate calories and a color category per item." }
         ]
       }],
       output_config: { format: { type: "json_schema", schema: FOOD_SCHEMA } }
@@ -531,7 +776,7 @@ async function identifyFood(base64) {
 }
 
 document.getElementById("photoBtn").onclick = () => {
-  if (!getApiKey()) { openSettings("Add your Anthropic API key to enable photo recognition."); return; }
+  if (!getApiKey()) { openSettings("Add your Anthropic API key below to enable photo recognition."); return; }
   document.getElementById("photoInput").click();
 };
 
@@ -557,16 +802,23 @@ document.getElementById("photoInput").onchange = async e => {
 
 /* ---------- review modal ---------- */
 
+function cycleColor(cur) { return COLORS[(COLORS.indexOf(cur) + 1) % COLORS.length]; }
+
 function openReview(dataUrl, result) {
   pendingReview = result;
   document.getElementById("reviewPhoto").src = dataUrl;
+  document.getElementById("reviewMeal").value = mealOfNow();
   document.getElementById("reviewNote").textContent = result.note || "";
-  document.getElementById("reviewItems").innerHTML = result.items.map((it, i) => `
+  document.getElementById("reviewItems").innerHTML = result.items.map((it, i) => {
+    const color = COLORS.includes(it.color) ? it.color : "yellow";
+    return `
     <div class="review-item">
       <input type="checkbox" checked data-i="${i}" aria-label="Include ${esc(it.name)}">
+      <button type="button" class="color-cycle" data-color="${color}" title="Color (tap to change)"><span class="dot ${color}"></span></button>
       <input class="r-name" value="${esc(it.name)}${it.portion ? esc(" (" + it.portion + ")") : ""}" aria-label="Food name">
       <input class="r-cal" type="number" min="0" step="1" value="${it.calories}" aria-label="Calories">
-    </div>`).join("");
+    </div>`;
+  }).join("");
   document.getElementById("reviewOverlay").classList.add("open");
 }
 
@@ -578,32 +830,123 @@ function closeReview() {
 
 document.getElementById("reviewCancel").onclick = closeReview;
 document.getElementById("reviewAdd").onclick = () => {
+  const meal = document.getElementById("reviewMeal").value;
   const rows = document.querySelectorAll("#reviewItems .review-item");
   let added = 0;
   for (const row of rows) {
     if (!row.querySelector("input[type=checkbox]").checked) continue;
     const name = row.querySelector(".r-name").value.trim();
     const cal = parseInt(row.querySelector(".r-cal").value, 10);
-    if (name && cal >= 0) { addFood(name, cal); added++; }
+    const color = row.querySelector(".color-cycle").dataset.color;
+    if (name && cal >= 0) { addFood(name, cal, meal, color); added++; }
   }
   closeReview();
   if (!added) alert("Nothing was selected to add.");
 };
 
+// color-cycle buttons everywhere (review modal + meal add forms)
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".color-cycle");
+  if (!btn) return;
+  const next = cycleColor(btn.dataset.color);
+  btn.dataset.color = next;
+  btn.innerHTML = `<span class="dot ${next}"></span>`;
+});
+
 /* ---------- settings modal ---------- */
 
+const PACES_LBS = [[0.5, "0.5 lb"], [1, "1 lb"], [1.5, "1.5 lb"], [2, "2 lb"]];
+const PACES_KG = [[0.25, "0.25 kg"], [0.5, "0.5 kg"], [0.75, "0.75 kg"], [1, "1 kg"]];
+
 function openSettings(hint) {
+  const p = state.profile;
   document.getElementById("apiKeyInput").value = getApiKey();
-  const sub = document.querySelector("#settingsOverlay .sub");
-  sub.textContent = hint || "Photo recognition uses the Claude API. Your key is stored only on this device and sent only to Anthropic.";
+  document.getElementById("settingsSub").textContent = hint || "Your data and API key stay on this device.";
+  document.querySelector(`input[name=budgetMode][value=${state.useProfile ? "profile" : "manual"}]`).checked = true;
+  document.getElementById("manualBudget").value = state.goal;
+  document.getElementById("pSex").value = p.sex || "";
+  document.getElementById("pAge").value = p.age || "";
+  document.getElementById("pActivity").value = String(p.activity || 1.375);
+  document.getElementById("pGoalWeight").value = p.goalWeight || "";
+  document.querySelectorAll(".unit-label").forEach(el => el.textContent = state.unit);
+
+  const paces = state.unit === "lbs" ? PACES_LBS : PACES_KG;
+  document.getElementById("pPace").innerHTML = paces.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+  document.getElementById("pPace").value = String(paces.some(([v]) => v === p.pace) ? p.pace : paces[1][0]);
+
+  const imperial = state.unit === "lbs";
+  document.getElementById("heightImperial").style.display = imperial ? "" : "none";
+  document.getElementById("heightMetric").style.display = imperial ? "none" : "";
+  if (p.heightCm) {
+    if (imperial) {
+      const totalIn = p.heightCm / 2.54;
+      document.getElementById("pFt").value = Math.floor(totalIn / 12);
+      document.getElementById("pIn").value = Math.round(totalIn % 12);
+    } else {
+      document.getElementById("pCm").value = Math.round(p.heightCm);
+    }
+  }
+  toggleBudgetFields();
+  updateBudgetPreview();
   document.getElementById("settingsOverlay").classList.add("open");
 }
+
+function readProfileFields() {
+  const imperial = state.unit === "lbs";
+  let heightCm = null;
+  if (imperial) {
+    const ft = parseFloat(document.getElementById("pFt").value);
+    const inch = parseFloat(document.getElementById("pIn").value) || 0;
+    if (ft > 0) heightCm = (ft * 12 + inch) * 2.54;
+  } else {
+    const cm = parseFloat(document.getElementById("pCm").value);
+    if (cm > 0) heightCm = cm;
+  }
+  return {
+    sex: document.getElementById("pSex").value,
+    age: parseInt(document.getElementById("pAge").value, 10) || null,
+    heightCm,
+    activity: parseFloat(document.getElementById("pActivity").value) || 1.375,
+    goalWeight: parseFloat(document.getElementById("pGoalWeight").value) || null,
+    pace: parseFloat(document.getElementById("pPace").value) || 1
+  };
+}
+
+function toggleBudgetFields() {
+  const useProfile = document.querySelector("input[name=budgetMode]:checked").value === "profile";
+  document.getElementById("profileFields").style.display = useProfile ? "" : "none";
+  document.getElementById("manualBudgetFields").style.display = useProfile ? "none" : "";
+}
+
+function updateBudgetPreview() {
+  const el = document.getElementById("budgetPreview");
+  const p = readProfileFields();
+  const w = latestWeight();
+  if (!p.sex || !p.age || !p.heightCm) { el.textContent = "Fill in sex, age, and height to calculate."; return; }
+  if (w == null) { el.textContent = "Log a weight below to calculate your budget."; return; }
+  const saved = state.profile;
+  state.profile = p; // temporarily, for computedBudget()
+  const b = computedBudget();
+  state.profile = saved;
+  el.textContent = b ? `Your daily budget: ${b} cal` : "Fill in the fields above to calculate.";
+}
+
+document.querySelectorAll("input[name=budgetMode]").forEach(r => r.onchange = () => { toggleBudgetFields(); updateBudgetPreview(); });
+["pSex", "pAge", "pFt", "pIn", "pCm", "pActivity", "pPace"].forEach(id =>
+  document.getElementById(id).addEventListener("input", updateBudgetPreview));
+
 document.getElementById("settingsBtn").onclick = () => openSettings();
+document.getElementById("editGoal").onclick = () => openSettings();
 document.getElementById("settingsCancel").onclick = () =>
   document.getElementById("settingsOverlay").classList.remove("open");
 document.getElementById("settingsSave").onclick = () => {
   const v = document.getElementById("apiKeyInput").value.trim();
   if (v) localStorage.setItem(KEY_KEY, v); else localStorage.removeItem(KEY_KEY);
+  state.useProfile = document.querySelector("input[name=budgetMode]:checked").value === "profile";
+  const manual = parseInt(document.getElementById("manualBudget").value, 10);
+  if (manual >= 800) state.goal = manual;
+  state.profile = readProfileFields();
+  save(); render();
   document.getElementById("settingsOverlay").classList.remove("open");
 };
 
@@ -617,27 +960,13 @@ document.getElementById("dateLabel").onclick = () => {
 };
 document.getElementById("dateInput").onchange = e => { if (e.target.value) { viewDate = e.target.value; render(); } };
 
-document.getElementById("editGoal").onclick = () => {
-  const v = prompt("Daily calorie goal:", state.goal);
-  const n = parseInt(v, 10);
-  if (n > 0) { state.goal = n; save(); render(); }
-};
-
-document.getElementById("foodForm").onsubmit = e => {
-  e.preventDefault();
-  const name = e.target.food.value.trim();
-  const cal = parseInt(e.target.cal.value, 10);
-  if (!name || !(cal >= 0)) return;
-  addFood(name, cal);
-  e.target.reset();
-  e.target.food.focus();
-};
-
-function addFood(name, cal) {
+function addFood(name, cal, meal, color) {
   const now = new Date();
   day(viewDate).foods.push({
     id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
     name, cal,
+    meal: meal || mealOfNow(),
+    color: COLORS.includes(color) ? color : "yellow",
     time: viewDate === todayStr()
       ? now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
       : ""
@@ -645,20 +974,51 @@ function addFood(name, cal) {
   save(); render();
 }
 
-document.getElementById("foodList").onclick = e => {
-  const btn = e.target.closest(".del");
-  if (!btn) return;
-  const d = day(viewDate);
-  d.foods = d.foods.filter(f => f.id !== btn.dataset.id);
-  save(); render();
-};
+// meal sections: + toggles the inline form; submit adds; dot taps recolor; ✕ deletes
+document.getElementById("mealSections").addEventListener("click", e => {
+  const plus = e.target.closest(".meal-plus");
+  if (plus) {
+    const form = document.querySelector(`form.meal-add[data-meal=${plus.dataset.meal}]`);
+    const wasOpen = form.classList.contains("open");
+    document.querySelectorAll("form.meal-add.open").forEach(f => f.classList.remove("open"));
+    if (!wasOpen) { form.classList.add("open"); form.food.focus(); }
+    return;
+  }
+  const del = e.target.closest(".del");
+  if (del) {
+    const d = day(viewDate);
+    d.foods = d.foods.filter(f => f.id !== del.dataset.id);
+    save(); render();
+    return;
+  }
+  const dot = e.target.closest("li .dot[data-id]");
+  if (dot) {
+    const f = day(viewDate).foods.find(f => f.id === dot.dataset.id);
+    if (f) { f.color = cycleColor(f.color); save(); render(); }
+  }
+});
+
+document.getElementById("mealSections").addEventListener("submit", e => {
+  const form = e.target.closest("form.meal-add");
+  if (!form) return;
+  e.preventDefault();
+  const name = form.food.value.trim();
+  const cal = parseInt(form.cal.value, 10);
+  const color = form.querySelector(".color-cycle").dataset.color;
+  if (!name || !(cal >= 0)) return;
+  addFood(name, cal, form.dataset.meal, color);
+  // render() rebuilt the DOM — reopen this meal's form for rapid entry
+  const again = document.querySelector(`form.meal-add[data-meal=${form.dataset.meal}]`);
+  again.classList.add("open");
+  again.food.focus();
+});
 
 document.getElementById("quickAdd").onclick = e => {
   const btn = e.target.closest("button");
   if (!btn) return;
   const items = JSON.parse(e.currentTarget.dataset.items || "[]");
   const it = items[Number(btn.dataset.i)];
-  if (it) addFood(it.name, it.cal);
+  if (it) addFood(it.name, it.cal, mealOfNow(), it.color);
 };
 
 document.getElementById("weightForm").onsubmit = e => {
@@ -689,7 +1049,8 @@ document.getElementById("importFile").onchange = e => {
       const s = JSON.parse(reader.result);
       if (!s || typeof s !== "object" || !s.days) throw new Error("bad format");
       if (!confirm("Replace all current data with the imported file?")) return;
-      state = { goal: s.goal || 2000, unit: s.unit || "lbs", days: s.days };
+      state = { goal: s.goal || 2000, unit: s.unit || "lbs", days: s.days, profile: s.profile, useProfile: s.useProfile };
+      normalize(state);
       save(); render();
     } catch (err) {
       alert("Couldn't import that file — it doesn't look like a Capture export.");
@@ -705,6 +1066,7 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   navigator.serviceWorker.register("sw.js").catch(() => { /* offline support unavailable */ });
 }
 
+save(); // persist any migration done in load()
 render();
 </script>
 </body>
