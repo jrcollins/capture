@@ -116,6 +116,10 @@
   }
   .photo-btn:hover { filter: brightness(0.97); }
   .photo-btn:disabled { opacity: 0.6; cursor: default; }
+  form.describe-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  form.describe-row input { flex: 1; min-width: 0; }
+  form.describe-row button { min-width: 84px; }
+  .mini-hint { font-size: 0.72rem; color: var(--muted); margin: 0 2px 12px; }
   .spinner {
     width: 16px; height: 16px; border: 2px solid var(--accent);
     border-top-color: transparent; border-radius: 50%;
@@ -242,6 +246,11 @@
     <span id="photoBtnIcon">📷</span> <span id="photoBtnText">Snap a photo of your food</span>
   </button>
   <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+  <form class="describe-row" id="describeForm">
+    <input id="descInput" name="desc" autocomplete="off" placeholder="Or describe it — e.g. '2 eggs and toast with butter'">
+    <button class="primary" id="descBtn" type="submit">Analyze</button>
+  </form>
+  <p class="mini-hint">Tip: text typed here is also sent with your next photo, to add details the camera can't see.</p>
   <div class="chips" id="quickAdd"></div>
   <div id="mealSections"></div>
 </section>
@@ -686,11 +695,16 @@ function renderCalChart() {
 
 function getApiKey() { return localStorage.getItem(KEY_KEY) || ""; }
 
-function setAnalyzing(on) {
-  const btn = document.getElementById("photoBtn");
-  btn.disabled = on;
-  document.getElementById("photoBtnIcon").innerHTML = on ? '<span class="spinner"></span>' : "📷";
-  document.getElementById("photoBtnText").textContent = on ? "Analyzing your photo…" : "Snap a photo of your food";
+function setAnalyzing(on, mode) {
+  document.getElementById("photoBtn").disabled = on;
+  const descBtn = document.getElementById("descBtn");
+  descBtn.disabled = on;
+  const photoBusy = on && mode === "photo";
+  document.getElementById("photoBtnIcon").innerHTML = photoBusy ? '<span class="spinner"></span>' : "📷";
+  document.getElementById("photoBtnText").textContent = photoBusy ? "Analyzing your photo…" : "Snap a photo of your food";
+  descBtn.innerHTML = on && mode === "text"
+    ? '<span class="spinner" style="border-color:#fff;border-top-color:transparent"></span>'
+    : "Analyze";
 }
 
 function downscaleImage(file, maxDim = 1024) {
@@ -738,7 +752,21 @@ const FOOD_SCHEMA = {
   additionalProperties: false
 };
 
-async function identifyFood(base64) {
+async function identifyFood(base64, description) {
+  const content = [];
+  if (base64) {
+    content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } });
+    content.push({
+      type: "text",
+      text: "Identify the foods in this photo; estimate calories and a color category per item."
+        + (description ? ` The user added these details — treat them as authoritative where they clarify or correct what's visible: "${description}"` : "")
+    });
+  } else {
+    content.push({
+      type: "text",
+      text: `There is no photo. Identify the foods from this description; estimate calories and a color category per item: "${description}"`
+    });
+  }
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -750,14 +778,8 @@ async function identifyFood(base64) {
     body: JSON.stringify({
       model: "claude-opus-4-8",
       max_tokens: 1500,
-      system: "You are a nutrition estimation assistant. Identify each distinct food or drink visible in the photo, estimate calories for the visible portion using typical nutritional values, and classify each item by caloric density into green (low), yellow (medium), or orange (high) per the schema descriptions. Prefer common household portion sizes. If the photo contains no food, return an empty items array and explain in the note.",
-      messages: [{
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: base64 } },
-          { type: "text", text: "Identify the foods in this photo; estimate calories and a color category per item." }
-        ]
-      }],
+      system: "You are a nutrition estimation assistant. The user provides a food photo, a text description, or both. Identify each distinct food or drink, estimate calories for the portion (visible or described) using typical nutritional values, and classify each item by caloric density into green (low), yellow (medium), or orange (high) per the schema descriptions. Prefer common household portion sizes. When a text description accompanies a photo, use it to resolve ambiguity — it may name ingredients, preparation, or portion sizes the image can't show. If no food is present or described, return an empty items array and explain in the note.",
+      messages: [{ role: "user", content }],
       output_config: { format: { type: "json_schema", schema: FOOD_SCHEMA } }
     })
   });
@@ -775,29 +797,44 @@ async function identifyFood(base64) {
   return JSON.parse(text.text);
 }
 
-document.getElementById("photoBtn").onclick = () => {
-  if (!getApiKey()) { openSettings("Add your Anthropic API key below to enable photo recognition."); return; }
-  document.getElementById("photoInput").click();
-};
-
-document.getElementById("photoInput").onchange = async e => {
-  const file = e.target.files[0];
-  e.target.value = "";
-  if (!file) return;
-  setAnalyzing(true);
+async function runAnalysis(file, description) {
+  const mode = file ? "photo" : "text";
+  setAnalyzing(true, mode);
   try {
-    const { dataUrl, base64 } = await downscaleImage(file);
-    const result = await identifyFood(base64);
+    let dataUrl = "", base64 = null;
+    if (file) ({ dataUrl, base64 } = await downscaleImage(file));
+    const result = await identifyFood(base64, description);
     if (!result.items || !result.items.length) {
-      alert(result.note || "No food detected in that photo.");
+      alert(result.note || "No food detected — try adding more detail.");
       return;
     }
+    document.getElementById("descInput").value = "";
     openReview(dataUrl, result);
   } catch (err) {
-    alert("Photo recognition failed: " + err.message);
+    alert("Food analysis failed: " + err.message);
   } finally {
     setAnalyzing(false);
   }
+}
+
+document.getElementById("photoBtn").onclick = () => {
+  if (!getApiKey()) { openSettings("Add your Anthropic API key below to enable AI food logging."); return; }
+  document.getElementById("photoInput").click();
+};
+
+document.getElementById("photoInput").onchange = e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  runAnalysis(file, document.getElementById("descInput").value.trim());
+};
+
+document.getElementById("describeForm").onsubmit = e => {
+  e.preventDefault();
+  const desc = document.getElementById("descInput").value.trim();
+  if (!desc) { document.getElementById("descInput").focus(); return; }
+  if (!getApiKey()) { openSettings("Add your Anthropic API key below to enable AI food logging."); return; }
+  runAnalysis(null, desc);
 };
 
 /* ---------- review modal ---------- */
@@ -806,7 +843,9 @@ function cycleColor(cur) { return COLORS[(COLORS.indexOf(cur) + 1) % COLORS.leng
 
 function openReview(dataUrl, result) {
   pendingReview = result;
-  document.getElementById("reviewPhoto").src = dataUrl;
+  const photo = document.getElementById("reviewPhoto");
+  photo.src = dataUrl || "";
+  photo.style.display = dataUrl ? "" : "none";
   document.getElementById("reviewMeal").value = mealOfNow();
   document.getElementById("reviewNote").textContent = result.note || "";
   document.getElementById("reviewItems").innerHTML = result.items.map((it, i) => {
